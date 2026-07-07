@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory OS - Enterprise Dashboard</title>
+    <meta name="description" content="Premium enterprise inventory management system. Track stock, suppliers, analytics, and more in one elegant workspace.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script defer src="script.js"></script>
+</head>
+
+<body data-theme="light">
+
+    <!-- Animated Inventory Background Canvas -->
+    <canvas id="inventoryCanvas" aria-hidden="true"></canvas>
+
+    <!-- Sidebar backdrop for mobile -->
+    <div id="sidebarBackdrop" class="sidebar-backdrop"></div>
+
+    <!-- Toast Stack -->
+    <div id="toastStack" class="toast-stack" aria-live="polite"></div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="loader"></div>
+        <p>Syncing inventory</p>
+    </div>
+
+    <!-- Confirm Dialog -->
+    <div id="confirmDialog" class="modal-backdrop hidden" role="dialog" aria-modal="true">
+        <section class="modal-card">
+            <div class="modal-icon"><i data-lucide="trash-2"></i></div>
+            <h2>Delete inventory item?</h2>
+            <p id="confirmText">This action cannot be undone.</p>
+            <div class="modal-actions">
+                <button type="button" id="cancelDelete" class="soft-button">Cancel</button>
+                <button type="button" id="confirmDelete" class="danger-button">Delete</button>
+            </div>
+        </section>
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <a class="brand" href="#dashboard" aria-label="Inventory dashboard home">
+            <span class="brand-mark"><i data-lucide="boxes"></i></span>
+            <span>
+                <strong>Inventory OS</strong>
+                <small>Operations Suite</small>
+            </span>
+        </a>
+
+        <p class="nav-section-label">Navigation</p>
+        <nav class="nav-list" aria-label="Primary navigation">
+            <a href="#dashboard" class="active"><i data-lucide="layout-dashboard"></i> Dashboard</a>
+            <a href="#inventory"><i data-lucide="database"></i> Inventory</a>
+            <a href="#analytics"><i data-lucide="chart-no-axes-combined"></i> Analytics</a>
+            <a href="#activity"><i data-lucide="history"></i> Activity</a>
+            <a href="#settings"><i data-lucide="settings"></i> Settings</a>
+        </nav>
+
+        <div class="nav-divider"></div>
+
+        <div class="shortcut-card">
+            <p><i data-lucide="command"></i> Shortcuts</p>
+            <span><kbd>Ctrl</kbd> + <kbd>K</kbd> Search</span>
+            <span><kbd>Ctrl</kbd> + <kbd>N</kbd> New item</span>
+        </div>
+
+        <p class="sidebar-version">v2.0 &middot; Enterprise</p>
+    </aside>
+
+    <!-- Main App Shell -->
+    <main class="app-shell">
+
+        <!-- Topbar -->
+        <header class="topbar">
+            <button type="button" class="mobile-menu icon-button" id="mobileMenuBtn" aria-label="Open menu">
+                <i data-lucide="menu"></i>
+            </button>
+            <div>
+                <p class="eyebrow">Enterprise Workspace</p>
+                <h1>Inventory Management</h1>
+            </div>
+            <div class="topbar-search">
+                <i data-lucide="search"></i>
+                <input type="search" id="navSearch" placeholder="Search inventory..." aria-label="Search inventory">
+            </div>
+            <div class="topbar-actions">
+                <button type="button" id="themeToggle" class="icon-button" aria-label="Toggle theme">
+                    <i data-lucide="moon"></i>
+                </button>
+                <button type="button" class="icon-button notification-button" aria-label="Notifications">
+                    <i data-lucide="bell"></i>
+                    <span></span>
+                </button>
+                <button type="button" id="printButton" class="icon-button" aria-label="Print inventory">
+                    <i data-lucide="printer"></i>
+                </button>
+                <div class="profile-menu">
+                    <button type="button" id="profileButton" class="profile-button" aria-label="User profile">
+                        <span>SA</span>
+                        <i data-lucide="chevron-down"></i>
+                    </button>
+                    <div id="profileDropdown" class="profile-dropdown hidden">
+                        <strong>Admin Profile</strong>
+                        <button type="button"><i data-lucide="settings"></i> Settings</button>
+                        <button type="button"><i data-lucide="download"></i> Export Log</button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Hero Panel -->
+        <section id="dashboard" class="hero-panel">
+            <div>
+                <span class="status-pill"><i data-lucide="sparkles"></i> Premium Inventory Workspace</span>
+                <h2>Inventory control for modern teams.</h2>
+                <p>Track stock, suppliers, product value, alerts, exports, and daily updates in one clean workspace.</p>
+                <div class="hero-actions">
+                    <button type="button" id="quickAddButton" class="gradient-button">
+                        <i data-lucide="plus"></i> Add Product
+                    </button>
+                    <button type="button" id="csvButton" class="glass-button">
+                        <i data-lucide="file-down"></i> Export CSV
+                    </button>
+                </div>
+            </div>
+            <div></div>
+        </section>
+
+        <!-- Metric Cards -->
+        <section class="metric-grid" aria-label="Inventory summary">
+            <article class="metric-card total-card">
+                <div class="metric-icon blue"><i data-lucide="package"></i></div>
+                <p>Total Products</p>
+                <strong id="totalItems">0</strong>
+                <span id="totalCategories">0 categories</span>
+            </article>
+            <article class="metric-card warning-card">
+                <div class="metric-icon orange"><i data-lucide="triangle-alert"></i></div>
+                <p>Low Stock</p>
+                <strong id="lowStock">0</strong>
+                <span>Needs attention</span>
+            </article>
+            <article class="metric-card value-card">
+                <div class="metric-icon emerald"><i data-lucide="badge-dollar-sign"></i></div>
+                <p>Inventory Value</p>
+                <strong id="totalValue">$0.00</strong>
+                <span id="totalQuantity">0 units</span>
+            </article>
+            <article class="metric-card update-card">
+                <div class="metric-icon purple"><i data-lucide="calendar-check"></i></div>
+                <p>Today's Updates</p>
+                <strong id="todayUpdates">0</strong>
+                <span>Created or edited</span>
+            </article>
+            <article class="metric-card category-card">
+                <div class="metric-icon cyan"><i data-lucide="tags"></i></div>
+                <p>Categories</p>
+                <strong id="categoryCount">0</strong>
+                <span>Product groups</span>
+            </article>
+        </section>
+
+        <!-- Analytics -->
+        <section id="analytics" class="analytics-grid">
+            <article class="glass-card chart-card">
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">Value</p>
+                        <h2>Inventory Value Chart</h2>
+                    </div>
+                    <i data-lucide="bar-chart-3"></i>
+                </div>
+                <canvas id="valueChart"></canvas>
+            </article>
+            <article class="glass-card chart-card">
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">Category</p>
+                        <h2>Category Distribution</h2>
+                    </div>
+                    <i data-lucide="pie-chart"></i>
+                </div>
+                <canvas id="categoryChart"></canvas>
+            </article>
+            <article class="glass-card chart-card wide">
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">Trends</p>
+                        <h2>Stock Trend &amp; Monthly Updates</h2>
+                    </div>
+                    <i data-lucide="activity"></i>
+                </div>
+                <canvas id="trendChart"></canvas>
+            </article>
+        </section>
+
+        <!-- Main Grid: Form + Activity -->
+        <section class="main-grid">
+            <form id="itemForm" class="glass-card form-panel">
+                <input type="hidden" id="itemId">
+                <input type="hidden" id="imageData">
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">Create / Update</p>
+                        <h2 id="formTitle">Add Product</h2>
+                    </div>
+                    <button type="button" id="resetButton" class="soft-button hidden">
+                        <i data-lucide="x"></i> Cancel
+                    </button>
+                </div>
+
+                <div class="image-uploader">
+                    <div id="imagePreview" class="image-preview"><i data-lucide="image-plus"></i></div>
+                    <div>
+                        <label for="imageUpload" class="upload-button">
+                            <i data-lucide="upload"></i> Upload image
+                        </label>
+                        <input type="file" id="imageUpload" accept="image/*">
+                        <p class="muted" style="margin-top:6px;font-size:.6875rem">PNG, JPG &lt; 800KB</p>
+                    </div>
+                </div>
+
+                <div class="field-grid">
+                    <label>Product Name<input type="text" id="itemName" placeholder="e.g. Wireless Keyboard" required></label>
+                    <label>Category<input type="text" id="category" list="categoryOptions" placeholder="e.g. Electronics"></label>
+                    <label>SKU<input type="text" id="sku" placeholder="SKU-2026-01"></label>
+                    <label>Barcode<input type="text" id="barcode" placeholder="8901234567890"></label>
+                    <label>Supplier<input type="text" id="supplier" placeholder="Acme Supply Co."></label>
+                    <label>Status
+                        <select id="status">
+                            <option>Active</option>
+                            <option>Low Stock</option>
+                            <option>Out of Stock</option>
+                            <option>Archived</option>
+                        </select>
+                    </label>
+                    <label>Quantity<input type="number" id="quantity" min="0" step="1" placeholder="0" required></label>
+                    <label>Minimum Stock<input type="number" id="minStock" min="0" step="1" placeholder="5"></label>
+                    <label>Price<input type="number" id="price" min="0" step="0.01" placeholder="0.00" required></label>
+                    <label>Purchase Date<input type="date" id="purchaseDate"></label>
+                    <label>Expiry Date<input type="date" id="expiryDate"></label>
+                </div>
+
+                <label style="margin-top:12px">Description
+                    <textarea id="description" rows="3" placeholder="Notes, specifications, storage requirements"></textarea>
+                </label>
+
+                <button type="submit" id="submitButton" class="gradient-button full-width">
+                    <i data-lucide="save"></i> Add Product
+                </button>
+            </form>
+
+            <section id="activity" class="glass-card activity-panel">
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">Live Log</p>
+                        <h2>Recent Activities</h2>
+                    </div>
+                    <i data-lucide="clock-3"></i>
+                </div>
+                <div id="activityList" class="activity-list"></div>
+                <div class="top-products">
+                    <div class="section-heading compact">
+                        <div>
+                            <p class="eyebrow">Leaders</p>
+                            <h2>Top Products</h2>
+                        </div>
+                    </div>
+                    <div id="topProducts"></div>
+                </div>
+            </section>
+        </section>
+
+        <!-- Inventory Table -->
+        <section id="inventory" class="glass-card inventory-panel">
+            <div class="section-heading table-title">
+                <div>
+                    <p class="eyebrow">Inventory Table</p>
+                    <h2>Products &amp; Stock Control</h2>
+                </div>
+                <div class="export-actions">
+                    <button type="button" id="excelButton" class="soft-button"><i data-lucide="sheet"></i> Excel</button>
+                    <button type="button" id="pdfButton" class="soft-button"><i data-lucide="file-text"></i> PDF</button>
+                    <button type="button" id="refreshButton" class="soft-button"><i data-lucide="refresh-cw"></i> Refresh</button>
+                </div>
+            </div>
+
+            <div class="toolbar">
+                <div class="search-box">
+                    <i data-lucide="search"></i>
+                    <input type="search" id="searchInput" placeholder="Search by name, SKU, supplier, barcode...">
+                </div>
+                <select id="categoryFilter">
+                    <option value="">All Categories</option>
+                </select>
+                <select id="sortSelect">
+                    <option value="updated_at-desc">Sort: Latest</option>
+                    <option value="name-asc">Name A-Z</option>
+                    <option value="price-desc">Price High-Low</option>
+                    <option value="price-asc">Price Low-High</option>
+                    <option value="qty-desc">Quantity High-Low</option>
+                    <option value="qty-asc">Quantity Low-High</option>
+                    <option value="created_at-desc">Date Newest</option>
+                </select>
+            </div>
+
+            <div class="table-wrap">
+                <table id="inventoryTable">
+                    <thead>
+                        <tr>
+                            <th data-sort="name">Product</th>
+                            <th data-sort="category">Category</th>
+                            <th data-sort="qty">Stock</th>
+                            <th data-sort="price">Price</th>
+                            <th>Supplier</th>
+                            <th>Status</th>
+                            <th data-sort="updated_at">Updated</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="itemsTableBody"></tbody>
+                </table>
+            </div>
+
+            <div id="emptyState" class="empty-state hidden">
+                <i data-lucide="package-open"></i>
+                <h3>No inventory records found</h3>
+                <p>Add a product or adjust the filters.</p>
+            </div>
+
+            <footer class="pagination-bar">
+                <span id="pageInfo">Showing 0 products</span>
+                <div class="pagination-controls">
+                    <button type="button" id="prevPage" class="icon-button" aria-label="Previous page">
+                        <i data-lucide="chevron-left"></i>
+                    </button>
+                    <span id="pageNumber">1</span>
+                    <button type="button" id="nextPage" class="icon-button" aria-label="Next page">
+                        <i data-lucide="chevron-right"></i>
+                    </button>
+                </div>
+            </footer>
+        </section>
+
+        <!-- Settings Strip -->
+        <section id="settings" class="settings-strip">
+            <article class="glass-card">
+                <i data-lucide="shield-check"></i>
+                <div>
+                    <h2>Quick Actions</h2>
+                    <p>Use keyboard shortcuts, exports, filters, and live search to move through inventory operations quickly.</p>
+                </div>
+            </article>
+        </section>
+
+        <datalist id="categoryOptions"></datalist>
+    </main>
+
+    <!-- Floating Action Button -->
+    <button type="button" class="fab" id="fabButton" aria-label="Add new product">
+        <i data-lucide="plus"></i>
+    </button>
+
+    <!-- Animated Canvas Background Script -->
+    <script>
+    (function () {
+        const canvas = document.getElementById('inventoryCanvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const COLOR = '#16A34A';
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resize();
+        window.addEventListener('resize', resize);
+
+        // Particle types: box, barcode, shelf, cart, pin, clipboard, graph
+        const TYPES = ['box','box','box','barcode','shelf','cart','pin','clipboard','graph','box'];
+
+        function randBetween(a, b) { return a + Math.random() * (b - a); }
+
+        const particles = Array.from({ length: 28 }, () => ({
+            x: Math.random() * window.innerWidth,
+            y: Math.random() * window.innerHeight,
+            type: TYPES[Math.floor(Math.random() * TYPES.length)],
+            size: randBetween(18, 44),
+            vx: randBetween(-0.22, 0.22),
+            vy: randBetween(-0.22, 0.22),
+            rot: Math.random() * Math.PI * 2,
+            vr: randBetween(-0.004, 0.004),
+            alpha: randBetween(0.08, 0.22),
+        }));
+
+        function drawBox(c, s) {
+            c.strokeRect(-s/2, -s/2, s, s);
+            c.beginPath(); c.moveTo(-s/2, -s/2+s*.35); c.lineTo(s/2, -s/2+s*.35); c.stroke();
+            c.beginPath(); c.moveTo(0, -s/2); c.lineTo(0, -s/2+s*.35); c.stroke();
+        }
+        function drawBarcode(c, s) {
+            const bars = 9; const bw = s / (bars * 2);
+            for (let i = 0; i < bars; i++) {
+                const x = -s/2 + i * bw * 2;
+                const h = s * (i % 3 === 0 ? 1 : i % 2 === 0 ? 0.7 : 0.85);
+                c.fillRect(x, -h/2, bw, h);
+            }
+        }
+        function drawShelf(c, s) {
+            const sh = s * .15;
+            [-s/2, -s/6, s/6].forEach(y => {
+                c.fillRect(-s/2, y, s, sh);
+            });
+            c.fillRect(-s/2, -s/2, sh, s);
+            c.fillRect(s/2-sh, -s/2, sh, s);
+        }
+        function drawCart(c, s) {
+            c.beginPath();
+            c.moveTo(-s/2, -s/3);
+            c.lineTo(-s/3, s/4);
+            c.lineTo(s/2, s/4);
+            c.lineTo(s*0.55, -s/3);
+            c.closePath();
+            c.stroke();
+            c.beginPath();
+            c.arc(-s/4, s/2, s/8, 0, Math.PI * 2);
+            c.stroke();
+            c.beginPath();
+            c.arc(s/4, s/2, s/8, 0, Math.PI * 2);
+            c.stroke();
+        }
+        function drawPin(c, s) {
+            c.beginPath();
+            c.arc(0, -s*.2, s*.3, 0, Math.PI * 2);
+            c.stroke();
+            c.beginPath();
+            c.moveTo(-s*.15, -s*.05);
+            c.quadraticCurveTo(0, s*.5, 0, s*.5);
+            c.quadraticCurveTo(0, s*.5, s*.15, -s*.05);
+            c.stroke();
+        }
+        function drawClipboard(c, s) {
+            c.strokeRect(-s*.35, -s/2, s*.7, s);
+            c.fillRect(-s*.15, -s/2-s*.06, s*.3, s*.12);
+            c.beginPath();
+            [-s*.15, 0, s*.15].forEach((x,i) => {
+                const y = -s*.2 + i * s*.2;
+                c.moveTo(-s*.2, y); c.lineTo(s*.2, y);
+            });
+            c.stroke();
+        }
+        function drawGraph(c, s) {
+            const pts = [
+                [-s*.4, s*.3],[- s*.15, 0],[s*.05, s*.15],[s*.25, -s*.3],[s*.4, -s*.1]
+            ];
+            c.beginPath();
+            pts.forEach(([px, py], i) => i === 0 ? c.moveTo(px, py) : c.lineTo(px, py));
+            c.stroke();
+            pts.forEach(([px, py]) => {
+                c.beginPath(); c.arc(px, py, s*.05, 0, Math.PI*2); c.fill();
+            });
+            c.beginPath();
+            c.moveTo(-s*.4, s*.4); c.lineTo(s*.4, s*.4);
+            c.moveTo(-s*.4, s*.4); c.lineTo(-s*.4, -s*.4);
+            c.stroke();
+        }
+
+        function drawParticle(p) {
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.rot);
+            ctx.globalAlpha = p.alpha;
+            ctx.strokeStyle = COLOR;
+            ctx.fillStyle = COLOR;
+            ctx.lineWidth = 1.5;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            const s = p.size;
+            switch (p.type) {
+                case 'box': drawBox(ctx, s); break;
+                case 'barcode': drawBarcode(ctx, s); break;
+                case 'shelf': drawShelf(ctx, s); break;
+                case 'cart': drawCart(ctx, s); break;
+                case 'pin': drawPin(ctx, s); break;
+                case 'clipboard': drawClipboard(ctx, s); break;
+                case 'graph': drawGraph(ctx, s); break;
+            }
+            ctx.restore();
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.rot += p.vr;
+                if (p.x < -80) p.x = canvas.width + 80;
+                if (p.x > canvas.width + 80) p.x = -80;
+                if (p.y < -80) p.y = canvas.height + 80;
+                if (p.y > canvas.height + 80) p.y = -80;
+                drawParticle(p);
+            });
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+        // Mobile sidebar
+        const sidebar = document.getElementById('sidebar');
+        const backdrop = document.getElementById('sidebarBackdrop');
+        const menuBtn = document.getElementById('mobileMenuBtn');
+        const fabBtn = document.getElementById('fabButton');
+
+        if (menuBtn && sidebar && backdrop) {
+            menuBtn.addEventListener('click', () => {
+                sidebar.classList.toggle('open');
+                backdrop.classList.toggle('show');
+            });
+            backdrop.addEventListener('click', () => {
+                sidebar.classList.remove('open');
+                backdrop.classList.remove('show');
+            });
+        }
+
+        if (fabBtn) {
+            fabBtn.addEventListener('click', () => {
+                const nameField = document.getElementById('itemName');
+                if (nameField) {
+                    nameField.focus();
+                    nameField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            });
+        }
+    })();
+    </script>
+
+</body>
+</html>

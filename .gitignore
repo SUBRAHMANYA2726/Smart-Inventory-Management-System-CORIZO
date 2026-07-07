@@ -1,0 +1,95 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+parts/
+var/
+sdist/
+develop-eggs/
+.installed.cfg
+lib/
+lib64/
+
+# Virtual environments
+venv/
+env/
+.venv/
+.env/
+ENV/
+
+# Environment variables - NEVER commit secrets
+.env
+.env.local
+.env.production
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+database.db
+
+# Logs
+*.log
+flask.out.log
+flask.err.log
+*.err.log
+*.out.log
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V8
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Editor / IDE
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.swp
+*.swo
+
+# Temp / scratch scripts (build artifacts)
+write_css.py
+write_html.py
+gen_html.py
+scratch_replace.py
+
+# Node (if ever added)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Coverage / testing
+.coverage
+htmlcov/
+.tox/
+.pytest_cache/
+
+# Distribution / packaging
+.eggs/
+MANIFEST
+
+# Byte-compiled
+*.pyc
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
