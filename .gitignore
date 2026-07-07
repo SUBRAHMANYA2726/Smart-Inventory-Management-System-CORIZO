@@ -93,3 +93,12 @@ MANIFEST
 .mypy_cache/
 .dmypy.json
 dmypy.json
+
+# Scratch / internal scripts
+git_push.py
+write_css.py
+write_html.py
+gen_html.py
+scratch_replace.py
+TODO.md
+PROJECT_REPORT.md
